@@ -267,7 +267,7 @@ export function App() {
   const [forms, setForms] = useState<Record<PlatformId, PlatformForm>>(buildInitialForms);
   const [filters, setFilters] = useState({ start: "", end: "" });
   const [view, setView] = useState<ViewMode>("board");
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [isLoading, setIsLoading] = useState(true);
   const [fieldDrawerOpen, setFieldDrawerOpen] = useState(false);
 
