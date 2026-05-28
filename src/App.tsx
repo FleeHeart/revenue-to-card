@@ -20,7 +20,8 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "./analytics";
 import { fieldDefinitions, type FieldDefinition } from "./fieldDefinitions";
 
 type PlatformId = "wechat" | "alipay" | "meituanTakeout" | "taobaoFlash" | "jdInstant" | "douyinLocal" | "meituanGroup";
@@ -270,10 +271,15 @@ export function App() {
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [isLoading, setIsLoading] = useState(true);
   const [fieldDrawerOpen, setFieldDrawerOpen] = useState(false);
+  const trackedCalculationKey = useRef("");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  useEffect(() => {
+    trackEvent("page_view", { page: "revenue_to_card" });
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 520);
@@ -343,9 +349,25 @@ export function App() {
   const earliestArrival = summary[0]?.date ?? "-";
   const activeStep = selected.length === 0 ? 0 : hasErrors || filteredDetails.length === 0 ? 1 : 2;
 
+  useEffect(() => {
+    if (hasErrors || details.length === 0) return;
+    const calculationKey = details.map((item) => `${item.platform.id}:${item.term}`).join("|");
+    if (trackedCalculationKey.current === calculationKey) return;
+    trackedCalculationKey.current = calculationKey;
+    trackEvent("calculation_ready", {
+      platform_count: details.length,
+      result_count: details.length,
+      selected_platforms: details.map((item) => item.platform.id),
+    });
+  }, [details, hasErrors]);
+
   function togglePlatform(id: PlatformId) {
     setSelected((current) => toggleItem(current, id));
     setForms((current) => initializeSelectedForm(current, id));
+    trackEvent("platform_selected", {
+      platform: id,
+      selected: !selected.includes(id),
+    });
   }
 
   function updateForm(id: PlatformId, patch: Partial<PlatformForm>) {
@@ -765,6 +787,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("全部");
   const [activeFieldId, setActiveFieldId] = useState(fieldDefinitions[0]?.id ?? "");
+  const trackedOpenRef = useRef(false);
   const highRelevanceCount = fieldDefinitions.filter((field) => field.toolRelevance === "high").length;
   const financeCount = fieldDefinitions.filter((field) => field.category === "财务中心").length;
   const quickTerms = ["入账", "账期", "佣金", "余额", "实收", "到卡"];
@@ -810,12 +833,44 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
 
   useEffect(() => {
     if (!open) return;
+    if (!trackedOpenRef.current) {
+      trackEvent("field_drawer_opened", {
+        total_fields: fieldDefinitions.length,
+      });
+      trackedOpenRef.current = true;
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose, open]);
+
+  useEffect(() => {
+    if (!open) {
+      trackedOpenRef.current = false;
+      return;
+    }
+    const keyword = query.trim();
+    if (!keyword) return;
+    const timer = window.setTimeout(() => {
+      trackEvent("field_search", {
+        keyword,
+        category,
+        result_count: filteredFields.length,
+      });
+    }, 520);
+    return () => window.clearTimeout(timer);
+  }, [category, filteredFields.length, open, query]);
+
+  function selectField(field: FieldDefinition) {
+    setActiveFieldId(field.id);
+    trackEvent("field_view", {
+      field_id: field.id,
+      field_name: field.name,
+      category: field.category,
+    });
+  }
 
   return (
     <AnimatePresence>
@@ -911,7 +966,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                         key={field.id}
                         type="button"
                         className={`field-list-card ${activeField?.id === field.id ? "is-active" : ""}`}
-                        onClick={() => setActiveFieldId(field.id)}
+                        onClick={() => selectField(field)}
                       >
                         <span className="field-list-card-head">
                           <strong>{field.name}</strong>
@@ -931,7 +986,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
 
               <div className="field-detail-pane">
-                {activeField ? <FieldDetail field={activeField} onSelectRelated={setActiveFieldId} /> : <FieldGuideEmpty />}
+                {activeField ? <FieldDetail field={activeField} onSelectRelated={(field) => selectField(field)} /> : <FieldGuideEmpty />}
               </div>
             </section>
           </motion.aside>
@@ -941,7 +996,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
-function FieldDetail({ field, onSelectRelated }: { field: FieldDefinition; onSelectRelated: (id: string) => void }) {
+function FieldDetail({ field, onSelectRelated }: { field: FieldDefinition; onSelectRelated: (field: FieldDefinition) => void }) {
   const relatedFields = field.relatedFieldIds.map((id) => fieldDefinitions.find((item) => item.id === id)).filter(Boolean) as FieldDefinition[];
 
   return (
@@ -992,7 +1047,7 @@ function FieldDetail({ field, onSelectRelated }: { field: FieldDefinition; onSel
         <div className="field-related-list">
           {relatedFields.length > 0 ? (
             relatedFields.map((item) => (
-              <button key={item.id} type="button" onClick={() => onSelectRelated(item.id)}>
+              <button key={item.id} type="button" onClick={() => onSelectRelated(item)}>
                 {item.name}
               </button>
             ))
