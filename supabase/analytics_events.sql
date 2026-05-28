@@ -10,6 +10,9 @@ create table if not exists public.analytics_events (
 
 alter table public.analytics_events enable row level security;
 
+grant usage on schema public to anon;
+grant insert on public.analytics_events to anon;
+
 drop policy if exists "Allow anonymous analytics inserts" on public.analytics_events;
 
 create policy "Allow anonymous analytics inserts"
@@ -26,4 +29,3 @@ with check (
     'calculation_ready'
   )
 );
-
