@@ -1,5 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
 type AnalyticsEventName =
   | "page_view"
   | "field_drawer_opened"
@@ -9,11 +7,6 @@ type AnalyticsEventName =
   | "calculation_ready";
 
 type AnalyticsPayload = Record<string, string | number | boolean | string[] | number[] | null | undefined>;
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 function getSessionId() {
   const key = "revenue_to_card_session_id";
@@ -26,7 +19,7 @@ function getSessionId() {
 }
 
 export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayload = {}) {
-  if (!supabase || typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
   const event = {
     event_name: eventName,
@@ -37,7 +30,13 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayl
   };
 
   window.setTimeout(() => {
-    void supabase.from("analytics_events").insert(event);
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+      keepalive: true,
+    }).catch(() => {
+      // Analytics should never interrupt the tool experience.
+    });
   }, 0);
 }
-
