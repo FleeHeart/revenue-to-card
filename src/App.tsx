@@ -22,6 +22,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "./analytics";
+import settlementEmptyState from "./assets/settlement-empty-state.webp";
 import { fieldDefinitions, type FieldDefinition } from "./fieldDefinitions";
 
 type PlatformId = "wechat" | "alipay" | "meituanTakeout" | "taobaoFlash" | "jdInstant" | "douyinLocal" | "meituanGroup";
@@ -233,20 +234,9 @@ function validate(selected: PlatformId[], forms: Record<PlatformId, PlatformForm
 
 function EmptyIllustration() {
   return (
-    <svg viewBox="0 0 220 150" role="img" aria-label="空状态插画" className="mx-auto h-28 w-full max-w-[220px]">
-      <defs>
-        <linearGradient id="emptyGradient" x1="35" x2="178" y1="22" y2="128">
-          <stop stopColor="hsl(var(--accent-a))" />
-          <stop offset="1" stopColor="hsl(var(--accent-b))" />
-        </linearGradient>
-      </defs>
-      <path d="M33 111c20-45 45-72 78-73 31-1 61 21 75 60 7 20-6 35-28 35H59c-21 0-33-8-26-22Z" fill="url(#emptyGradient)" opacity=".18" />
-      <rect x="58" y="45" width="105" height="70" rx="8" fill="hsl(var(--surface-strong))" stroke="hsl(var(--border))" />
-      <path d="M75 67h68M75 84h43M75 101h54" stroke="hsl(var(--muted))" strokeWidth="6" strokeLinecap="round" opacity=".55" />
-      <circle cx="157" cy="42" r="16" fill="url(#emptyGradient)" />
-      <path d="m151 42 4 4 9-10" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M41 122h139" stroke="hsl(var(--border))" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <div className="empty-illustration-wrap" aria-hidden="true">
+      <img src={settlementEmptyState} alt="" />
+    </div>
   );
 }
 
@@ -396,6 +386,29 @@ export function App() {
               </div>
               <h1>营收到卡轻量核算工具</h1>
               <p>把多平台结算金额扣除品牌抽佣后，按 T+N 账期转换成门店实际到卡节奏。</p>
+              <div className="hero-bullets" aria-label="工具特点">
+                <span>多平台账期统一</span>
+                <span>门店到卡节奏</span>
+                <span>字段口径可查</span>
+              </div>
+            </div>
+
+            <div className="hero-visual-card" aria-label="本次核算概览">
+              <img src={settlementEmptyState} alt="" />
+              <div className="hero-visual-overlay">
+                <span>预计到账</span>
+                <strong>{formatMoney(totalAmount)}</strong>
+              </div>
+              <div className="hero-mini-grid">
+                <span>
+                  <small>平台</small>
+                  <strong>{selected.length}</strong>
+                </span>
+                <span>
+                  <small>结果</small>
+                  <strong>{filteredDetails.length}</strong>
+                </span>
+              </div>
             </div>
 
             <div className="hero-actions">
@@ -609,6 +622,14 @@ export function App() {
               }
             >
               <div className="result-stack">
+                <div className="result-brief">
+                  <div>
+                    <span className="hero-label">Settlement Timeline</span>
+                    <h2>到卡节奏看板</h2>
+                  </div>
+                  <p>{filteredDetails.length > 0 ? "已按平台账期汇总门店预计到账。" : "录入平台金额后，这里会生成明细、汇总和日历视图。"}</p>
+                </div>
+
                 <div className="metric-grid">
                   <MetricCard icon={<CircleDollarSign className="h-4 w-4" />} label="门店预计到卡" value={formatMoney(totalAmount)} />
                   <MetricCard icon={<WalletCards className="h-4 w-4" />} label="品牌抽佣合计" value={formatMoney(commissionTotal)} />
