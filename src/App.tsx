@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "./analytics";
 import settlementEmptyState from "./assets/settlement-empty-state.webp";
 import { fieldDefinitions, type FieldDefinition } from "./fieldDefinitions";
@@ -61,6 +61,7 @@ type DetailRow = {
 type ValidationMap = Partial<Record<PlatformId, Partial<Record<keyof PlatformForm, string>>>>;
 
 const fieldCategories = ["全部", "营业中心", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
+const BillProcessorModal = lazy(() => import("./BillProcessorModal").then((module) => ({ default: module.BillProcessorModal })));
 
 const platforms: PlatformConfig[] = [
   {
@@ -261,6 +262,7 @@ export function App() {
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [isLoading, setIsLoading] = useState(true);
   const [fieldDrawerOpen, setFieldDrawerOpen] = useState(false);
+  const [billProcessorOpen, setBillProcessorOpen] = useState(false);
   const trackedCalculationKey = useRef("");
 
   useEffect(() => {
@@ -412,10 +414,16 @@ export function App() {
             </div>
 
             <div className="hero-actions">
-              <button className="field-guide-button" type="button" onClick={() => setFieldDrawerOpen(true)}>
-                <BookOpen className="h-4 w-4" />
-                <span>字段说明</span>
-              </button>
+              <div className="hero-tool-stack">
+                <button className="field-guide-button" type="button" onClick={() => setFieldDrawerOpen(true)}>
+                  <BookOpen className="h-4 w-4" />
+                  <span>字段说明</span>
+                </button>
+                <button className="field-guide-button bill-tool-button" type="button" onClick={() => setBillProcessorOpen(true)}>
+                  <Database className="h-4 w-4" />
+                  <span>账单处理</span>
+                </button>
+              </div>
               <button className="icon-button" type="button" aria-label="重置" title="重置" onClick={resetAll}>
                 <RefreshCcw className="h-4 w-4" />
               </button>
@@ -700,6 +708,9 @@ export function App() {
         </section>
       </div>
       <FieldGuideDrawer open={fieldDrawerOpen} onClose={() => setFieldDrawerOpen(false)} />
+      <Suspense fallback={null}>
+        <BillProcessorModal open={billProcessorOpen} onClose={() => setBillProcessorOpen(false)} />
+      </Suspense>
     </main>
   );
 }

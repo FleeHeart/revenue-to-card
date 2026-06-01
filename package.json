@@ -9,7 +9,9 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.23.12",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
