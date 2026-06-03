@@ -60,7 +60,7 @@ type DetailRow = {
 
 type ValidationMap = Partial<Record<PlatformId, Partial<Record<keyof PlatformForm, string>>>>;
 
-const fieldCategories = ["全部", "营业中心", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
+const fieldCategories = ["全部", "营业中心", "智慧门店", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
 const BillProcessorModal = lazy(() => import("./BillProcessorModal").then((module) => ({ default: module.BillProcessorModal })));
 
 const platforms: PlatformConfig[] = [
