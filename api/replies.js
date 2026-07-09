@@ -6,11 +6,9 @@ function normalizeSupabaseUrl(url) {
 
 function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.SUPABASE_SERVICE_KEY ??
-    process.env.SUPABASE_ANON_KEY ??
-    process.env.VITE_SUPABASE_ANON_KEY;
+  const privilegedKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY;
+  const publicKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseKey = privilegedKey ?? publicKey;
 
   if (!supabaseUrl || !supabaseKey) {
     return null;
@@ -19,6 +17,7 @@ function getSupabaseConfig() {
   return {
     endpoint: `${normalizeSupabaseUrl(supabaseUrl)}/rest/v1/reply_items`,
     key: supabaseKey,
+    hasPrivilegedKey: Boolean(privilegedKey),
   };
 }
 
@@ -103,6 +102,11 @@ export default async function handler(request, response) {
     }
 
     if (request.method === "POST") {
+      if (!config.hasPrivilegedKey) {
+        response.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY is not configured" });
+        return;
+      }
+
       const body = parseBody(request);
       const payload = Array.isArray(body.items) ? body.items.map(normalizeReply) : normalizeReply(body);
       const items = Array.isArray(payload) ? payload : [payload];
@@ -128,6 +132,11 @@ export default async function handler(request, response) {
     }
 
     if (request.method === "PUT" || request.method === "PATCH") {
+      if (!config.hasPrivilegedKey) {
+        response.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY is not configured" });
+        return;
+      }
+
       const body = parseBody(request);
       const id = String(body.id ?? "").trim();
       if (!id) {
@@ -158,6 +167,11 @@ export default async function handler(request, response) {
     }
 
     if (request.method === "DELETE") {
+      if (!config.hasPrivilegedKey) {
+        response.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY is not configured" });
+        return;
+      }
+
       const body = parseBody(request);
       const id = String(body.id ?? "").trim();
       const password = String(body.password ?? "");

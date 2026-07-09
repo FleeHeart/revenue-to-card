@@ -302,7 +302,11 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
             mode={editor.mode}
             item={editor.item}
             onCancel={() => setEditor(null)}
-            onSave={(draft) => void saveDraft(draft, editor.item).catch((error) => setDataMessage(error instanceof Error ? error.message : "保存回复失败"))}
+            onSave={async (draft) => {
+              await saveDraft(draft, editor.item);
+              setDataMessage("已保存到线上回复库");
+              window.setTimeout(() => setDataMessage(""), 1800);
+            }}
           />
         )}
         {deleteTarget && (
@@ -487,6 +491,8 @@ function ReplyEditor({
     ...item,
     keywords: item?.keywords ?? [],
   }));
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const canSave = draft.question.trim() && draft.answer.trim();
 
@@ -503,9 +509,18 @@ function ReplyEditor({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 12 }}
         transition={{ duration: 0.18 }}
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
-          if (canSave) onSave(draft);
+          if (!canSave || isSaving) return;
+          setIsSaving(true);
+          setError("");
+          try {
+            await onSave(draft);
+          } catch (caught) {
+            setError(caught instanceof Error ? caught.message : "保存回复失败");
+          } finally {
+            setIsSaving(false);
+          }
         }}
       >
         <header>
@@ -544,12 +559,13 @@ function ReplyEditor({
           备注
           <textarea className="field-input" rows={3} value={draft.note ?? ""} onChange={(event) => update("note", event.target.value)} />
         </label>
+        {error && <p className="reply-editor-error">{error}</p>}
         <footer>
           <button className="text-button" type="button" onClick={onCancel}>
             取消
           </button>
-          <button className="reply-primary-button" type="submit" disabled={!canSave}>
-            保存到我的库
+          <button className="reply-primary-button" type="submit" disabled={!canSave || isSaving}>
+            {isSaving ? "正在保存" : "保存到线上库"}
           </button>
         </footer>
       </motion.form>
