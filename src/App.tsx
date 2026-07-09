@@ -10,6 +10,7 @@ import {
   Database,
   ListFilter,
   Loader2,
+  MessageSquareText,
   Moon,
   Plus,
   RefreshCcw,
@@ -22,12 +23,12 @@ import {
 import type { ReactNode } from "react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "./analytics";
-import settlementEmptyState from "./assets/settlement-empty-state.webp";
 import { fieldDefinitions, type FieldDefinition } from "./fieldDefinitions";
 
 type PlatformId = "wechat" | "alipay" | "meituanTakeout" | "taobaoFlash" | "jdInstant" | "douyinLocal" | "meituanGroup";
 type ViewMode = "board" | "list" | "calendar";
 type ThemeMode = "dark" | "light";
+type AppRoute = "home" | "calculator" | "bill" | "fields" | "reply";
 
 type PlatformConfig = {
   id: PlatformId;
@@ -62,6 +63,7 @@ type ValidationMap = Partial<Record<PlatformId, Partial<Record<keyof PlatformFor
 
 const fieldCategories = ["全部", "营业中心", "智慧门店", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
 const BillProcessorModal = lazy(() => import("./BillProcessorModal").then((module) => ({ default: module.BillProcessorModal })));
+const ReplyAssistant = lazy(() => import("./ReplyAssistant").then((module) => ({ default: module.ReplyAssistant })));
 
 const platforms: PlatformConfig[] = [
   {
@@ -70,7 +72,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 1,
     termOptions: [1],
     badge: "WX",
-    accent: "from-emerald-300 via-cyan-300 to-sky-400",
+    accent: "from-emerald-200 via-lime-300 to-teal-300",
   },
   {
     id: "alipay",
@@ -78,7 +80,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 1,
     termOptions: [1],
     badge: "ALI",
-    accent: "from-violet-300 via-fuchsia-300 to-cyan-300",
+    accent: "from-sky-200 via-teal-300 to-lime-300",
   },
   {
     id: "meituanTakeout",
@@ -86,7 +88,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 3,
     termOptions: [3],
     badge: "MT",
-    accent: "from-yellow-200 via-amber-300 to-cyan-300",
+    accent: "from-yellow-200 via-amber-300 to-lime-300",
   },
   {
     id: "taobaoFlash",
@@ -94,7 +96,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 3,
     termOptions: [3],
     badge: "TB",
-    accent: "from-orange-300 via-rose-300 to-fuchsia-300",
+    accent: "from-orange-300 via-rose-300 to-amber-200",
   },
   {
     id: "jdInstant",
@@ -102,7 +104,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 1,
     termOptions: [1, 3],
     badge: "JD",
-    accent: "from-rose-300 via-red-300 to-sky-300",
+    accent: "from-rose-300 via-orange-300 to-yellow-200",
   },
   {
     id: "douyinLocal",
@@ -110,7 +112,7 @@ const platforms: PlatformConfig[] = [
     defaultTerm: 5,
     termOptions: [5],
     badge: "DY",
-    accent: "from-neutral-100 via-cyan-300 to-pink-300",
+    accent: "from-neutral-100 via-teal-300 to-rose-300",
   },
   {
     id: "meituanGroup",
@@ -124,6 +126,19 @@ const platforms: PlatformConfig[] = [
 
 const today = new Date();
 const isoToday = toDateInput(today);
+
+function getRouteFromPath(pathname: string): AppRoute {
+  if (pathname.endsWith("/calculator")) return "calculator";
+  if (pathname.endsWith("/bill")) return "bill";
+  if (pathname.endsWith("/fields")) return "fields";
+  if (pathname.endsWith("/reply")) return "reply";
+  return "home";
+}
+
+function getPathForRoute(route: AppRoute) {
+  if (route === "home") return "/";
+  return `/${route}`;
+}
 
 function toDateInput(date: Date) {
   const year = date.getFullYear();
@@ -233,14 +248,6 @@ function validate(selected: PlatformId[], forms: Record<PlatformId, PlatformForm
   return errors;
 }
 
-function EmptyIllustration() {
-  return (
-    <div className="empty-illustration-wrap" aria-hidden="true">
-      <img src={settlementEmptyState} alt="" />
-    </div>
-  );
-}
-
 function SkeletonCard() {
   return (
     <div className="glass-card min-h-[132px] overflow-hidden p-4">
@@ -259,10 +266,9 @@ export function App() {
   const [forms, setForms] = useState<Record<PlatformId, PlatformForm>>(buildInitialForms);
   const [filters, setFilters] = useState({ start: "", end: "" });
   const [view, setView] = useState<ViewMode>("board");
-  const [theme, setTheme] = useState<ThemeMode>("light");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [isLoading, setIsLoading] = useState(true);
-  const [fieldDrawerOpen, setFieldDrawerOpen] = useState(false);
-  const [billProcessorOpen, setBillProcessorOpen] = useState(false);
+  const [route, setRoute] = useState<AppRoute>(() => getRouteFromPath(window.location.pathname));
   const trackedCalculationKey = useRef("");
 
   useEffect(() => {
@@ -270,8 +276,14 @@ export function App() {
   }, [theme]);
 
   useEffect(() => {
-    trackEvent("page_view", { page: "revenue_to_card" });
+    const onPopState = () => setRoute(getRouteFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    trackEvent("page_view", { page: route });
+  }, [route]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 520);
@@ -373,75 +385,29 @@ export function App() {
     setView("board");
   }
 
+  function navigate(route: AppRoute) {
+    const nextPath = getPathForRoute(route);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+    setRoute(route);
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-[hsl(var(--bg))] text-[hsl(var(--text))]">
       <div className="workspace-shell">
-        <header className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-5 sm:px-6 lg:px-8">
-          <section className="hero-panel">
-            <div className="hero-copy">
-              <div className="eyebrow">
-                <span className="eyebrow-chip">
-                  <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--accent-b))]" />
-                  Revenue Desk
-                </span>
-                <span>{isoToday}</span>
-              </div>
-              <h1>营收到卡轻量核算工具</h1>
-              <p>把多平台结算金额扣除品牌抽佣后，按 T+N 账期转换成门店实际到卡节奏。</p>
-              <div className="hero-bullets" aria-label="工具特点">
-                <span>多平台账期统一</span>
-                <span>门店到卡节奏</span>
-                <span>字段口径可查</span>
-              </div>
-            </div>
+        <AppTopBar
+          route={route}
+          theme={theme}
+          today={isoToday}
+          onNavigate={navigate}
+          onReset={resetAll}
+          onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+        />
 
-            <div className="hero-visual-card" aria-label="本次核算概览">
-              <img src={settlementEmptyState} alt="" />
-              <div className="hero-visual-overlay">
-                <span>预计到账</span>
-                <strong>{formatMoney(totalAmount)}</strong>
-              </div>
-              <div className="hero-mini-grid">
-                <span>
-                  <small>平台</small>
-                  <strong>{selected.length}</strong>
-                </span>
-                <span>
-                  <small>结果</small>
-                  <strong>{filteredDetails.length}</strong>
-                </span>
-              </div>
-            </div>
+        {route === "home" && <HomePortal today={isoToday} onNavigate={navigate} />}
 
-            <div className="hero-actions">
-              <div className="hero-tool-stack">
-                <button className="field-guide-button" type="button" onClick={() => setFieldDrawerOpen(true)}>
-                  <BookOpen className="h-4 w-4" />
-                  <span>字段说明</span>
-                </button>
-                <button className="field-guide-button bill-tool-button" type="button" onClick={() => setBillProcessorOpen(true)}>
-                  <Database className="h-4 w-4" />
-                  <span>账单处理</span>
-                </button>
-              </div>
-              <button className="icon-button" type="button" aria-label="重置" title="重置" onClick={resetAll}>
-                <RefreshCcw className="h-4 w-4" />
-              </button>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="切换主题"
-                title="切换主题"
-                onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-            </div>
-          </section>
-
-        </header>
-
-        <section className="process-grid mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        {route === "calculator" && <section className="process-grid mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
           <StepIndicator
             active={activeStep >= 0}
             current={activeStep === 0}
@@ -676,6 +642,7 @@ export function App() {
                   <EmptyState
                     title={hasErrors ? "先修正录入项" : selected.length === 0 ? "暂无核算结果" : "当前筛选没有结果"}
                     action={hasErrors ? "错误项已标记" : "结果会在这里出现"}
+                    hint={selected.length === 0 ? "先选平台并录入金额" : "调整录入项或筛选条件后刷新视图"}
                   />
                 ) : (
                   <AnimatePresence mode="wait">
@@ -695,9 +662,9 @@ export function App() {
               </div>
             </Panel>
           </div>
-        </section>
+        </section>}
 
-        <section className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        {route === "calculator" && <section className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
           <div className="hero-focus summary-footer">
             <span className="hero-label">本次门店预计到卡</span>
             <strong>{formatMoney(totalAmount)}</strong>
@@ -705,13 +672,231 @@ export function App() {
               {filteredDetails.length > 0 ? `品牌抽佣 ${formatMoney(commissionTotal)} · 最早 ${formatDate(earliestArrival)}` : "选择平台后开始核算"}
             </span>
           </div>
+        </section>}
+        <FieldGuideDrawer open={route === "fields"} onClose={() => navigate("home")} />
+        <Suspense fallback={<FeaturePageSkeleton />}>
+          <BillProcessorModal open={route === "bill"} onClose={() => navigate("home")} />
+        </Suspense>
+        <Suspense fallback={<FeaturePageSkeleton />}>
+          {route === "reply" && <ReplyAssistant onClose={() => navigate("home")} />}
+        </Suspense>
+      </div>
+    </main>
+  );
+}
+
+function FeaturePageSkeleton() {
+  return (
+    <section className="feature-page-skeleton" aria-label="正在加载">
+      <SkeletonCard />
+      <SkeletonCard />
+    </section>
+  );
+}
+
+function AppTopBar({
+  route,
+  theme,
+  today,
+  onNavigate,
+  onReset,
+  onToggleTheme,
+}: {
+  route: AppRoute;
+  theme: ThemeMode;
+  today: string;
+  onNavigate: (route: AppRoute) => void;
+  onReset: () => void;
+  onToggleTheme: () => void;
+}) {
+  const navItems: Array<{ route: AppRoute; label: string; icon: ReactNode }> = [
+    { route: "home", label: "首页", icon: <Sparkles className="h-4 w-4" /> },
+    { route: "calculator", label: "核算工具", icon: <WalletCards className="h-4 w-4" /> },
+    { route: "bill", label: "账单处理", icon: <Database className="h-4 w-4" /> },
+    { route: "fields", label: "字段说明", icon: <BookOpen className="h-4 w-4" /> },
+    { route: "reply", label: "回复助手", icon: <MessageSquareText className="h-4 w-4" /> },
+  ];
+
+  return (
+    <header className="app-topbar">
+      <button className="brand-lockup" type="button" onClick={() => onNavigate("home")}>
+        <span className="brand-mark">
+          <Sparkles className="h-4 w-4" />
+        </span>
+        <span>
+          <strong>扶摇</strong>
+          <small>FuYao · {today}</small>
+        </span>
+      </button>
+
+      <nav className="app-nav" aria-label="主要功能">
+        {navItems.map((item) => (
+          <button
+            key={item.route}
+            className={route === item.route ? "is-active" : ""}
+            type="button"
+            onClick={() => onNavigate(item.route)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="topbar-actions">
+        {route === "calculator" && (
+          <button className="icon-button" type="button" aria-label="重置" title="重置" onClick={onReset}>
+            <RefreshCcw className="h-4 w-4" />
+          </button>
+        )}
+        <button className="icon-button" type="button" aria-label="切换主题" title="切换主题" onClick={onToggleTheme}>
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function HomePortal({ today, onNavigate }: { today: string; onNavigate: (route: AppRoute) => void }) {
+  const features: Array<{
+    route: AppRoute;
+    title: string;
+    text: string;
+    meta: string;
+    stat: string;
+    foot: string;
+    icon: ReactNode;
+    accent: string;
+  }> = [
+    {
+      route: "calculator",
+      title: "核算工具",
+      text: "按平台账期、抽佣比例和营收周期，生成门店预计到卡日期、明细与汇总视图。",
+      meta: "T+N 到卡测算",
+      stat: "7 平台",
+      foot: "到账节奏、佣金扣减、日历视图",
+      icon: <WalletCards className="h-5 w-5" />,
+      accent: "from-lime-200 via-emerald-300 to-teal-300",
+    },
+    {
+      route: "bill",
+      title: "账单处理",
+      text: "上传京东秒送账单，完成字段识别、清洗映射、拆分账单和 Zip 打包下载。",
+      meta: "本地解析账单",
+      stat: "XLSX",
+      foot: "模板映射、清洗日志、打包下载",
+      icon: <Database className="h-5 w-5" />,
+      accent: "from-teal-200 via-lime-300 to-amber-200",
+    },
+    {
+      route: "fields",
+      title: "字段说明",
+      text: "查询数据中心字段口径、公式、常见误解和关联字段，减少对账沟通成本。",
+      meta: `${fieldDefinitions.length} 个字段口径`,
+      stat: "口径库",
+      foot: "字段搜索、公式解释、关联跳转",
+      icon: <BookOpen className="h-5 w-5" />,
+      accent: "from-amber-200 via-orange-300 to-rose-300",
+    },
+    {
+      route: "reply",
+      title: "回复助手",
+      text: "维护常用 Q/A 和标准话术，按问题、关键词、场景快速筛选，并一键复制回复内容。",
+      meta: "Q/A 话术库",
+      stat: "复制",
+      foot: "上传导入、增删改查、全量检索",
+      icon: <MessageSquareText className="h-5 w-5" />,
+      accent: "from-cyan-200 via-lime-300 to-emerald-300",
+    },
+  ];
+
+  return (
+    <section className="home-portal mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:px-6 lg:px-8">
+      <motion.div className="home-hero" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+        <div className="home-copy">
+          <span className="system-chip">
+            <Sparkles className="h-3.5 w-3.5" />
+            FuYao · {today}
+          </span>
+          <h1>扶摇</h1>
+          <p>把平台账单、到账测算、字段口径和标准回复集中到一个入口。少解释几轮，多给一份能直接对账和沟通的结果。</p>
+          <div className="hero-action-row">
+            <button className="primary-hero-action" type="button" onClick={() => onNavigate("calculator")}>
+              <WalletCards className="h-4 w-4" />
+              开始核算
+            </button>
+            <button className="secondary-hero-action" type="button" onClick={() => onNavigate("bill")}>
+              处理账单
+            </button>
+          </div>
+        </div>
+        <div className="home-console" aria-label="系统基础能力">
+          <div className="console-header">
+            <span>LIVE WORKFLOW</span>
+            <strong>4</strong>
+          </div>
+          <div className="console-track">
+            <span>账单</span>
+            <span>清洗</span>
+            <span>核算</span>
+            <span>回复</span>
+          </div>
+          <div className="system-capabilities">
+            <span>
+              <small>01</small>
+              平台账期统一换算
+            </span>
+            <span>
+              <small>02</small>
+              账单清洗与拆分
+            </span>
+            <span>
+              <small>03</small>
+              字段口径快速检索
+            </span>
+            <span>
+              <small>04</small>
+              回复话术一键复制
+            </span>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="feature-entry-grid">
+        {features.map((feature, index) => (
+          <motion.button
+            key={feature.route}
+            className={`feature-entry-card task-card is-${feature.route}`}
+            type="button"
+            onClick={() => onNavigate(feature.route)}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: index * 0.04 }}
+          >
+            <span className={`feature-entry-icon bg-gradient-to-br ${feature.accent}`}>{feature.icon}</span>
+            <span className="feature-entry-copy">
+              <small>{feature.meta}</small>
+              <strong>{feature.title}</strong>
+              <span>{feature.text}</span>
+            </span>
+            <span className="feature-entry-stat">{feature.stat}</span>
+            <span className="feature-entry-foot">{feature.foot}</span>
+            <ArrowRight className="feature-entry-arrow h-5 w-5" />
+          </motion.button>
+        ))}
+      </div>
+
+      <div className="home-support-grid">
+        <section>
+          <h2>适合处理什么问题</h2>
+          <p>当品牌、门店或财务同事问“这笔收入什么时候到卡、金额为什么不一致、字段口径怎么算”时，可以从这里直接进入对应工具。</p>
+        </section>
+        <section>
+          <h2>使用方式</h2>
+          <p>选择功能入口后进入全屏工作区；浏览器地址会同步为独立路径，方便刷新、收藏或直接分享给同事。</p>
         </section>
       </div>
-      <FieldGuideDrawer open={fieldDrawerOpen} onClose={() => setFieldDrawerOpen(false)} />
-      <Suspense fallback={null}>
-        <BillProcessorModal open={billProcessorOpen} onClose={() => setBillProcessorOpen(false)} />
-      </Suspense>
-    </main>
+    </section>
   );
 }
 
@@ -805,12 +990,17 @@ function StepIndicator({
   );
 }
 
-function EmptyState({ title, action }: { title: string; action: string }) {
+function EmptyState({ title, action, hint = "选择平台后，这里会自动展开录入卡片" }: { title: string; action: string; hint?: string }) {
   return (
     <div className="empty-state">
-      <EmptyIllustration />
-      <h3 className="mt-3 text-base font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-[hsl(var(--muted))]">{action}</p>
+      <div className="empty-state-mark" aria-hidden="true">
+        <Sparkles className="h-5 w-5" />
+      </div>
+      <div className="empty-state-copy">
+        <h3>{title}</h3>
+        <p>{action}</p>
+      </div>
+      <span className="empty-state-hint">{hint}</span>
     </div>
   );
 }
@@ -912,10 +1102,10 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
           <motion.aside
             className="field-drawer"
             aria-label="数据中心字段说明"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 360, damping: 34 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
           >
             <header className="field-drawer-header">
               <div className="field-drawer-title">
