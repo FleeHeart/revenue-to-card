@@ -1,8 +1,6 @@
-const DELETE_PASSWORD = process.env.REPLY_DELETE_PASSWORD ?? "FuYao";
+import { normalizeSupabaseUrl, supabaseHeaders, supabaseRequest } from "./supabaseHttp.js";
 
-function normalizeSupabaseUrl(url) {
-  return url.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-}
+const DELETE_PASSWORD = process.env.REPLY_DELETE_PASSWORD ?? "FuYao";
 
 function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
@@ -18,15 +16,6 @@ function getSupabaseConfig() {
     endpoint: `${normalizeSupabaseUrl(supabaseUrl)}/rest/v1/reply_items`,
     key: supabaseKey,
     hasPrivilegedKey: Boolean(privilegedKey),
-  };
-}
-
-function supabaseHeaders(key, prefer = "return=representation") {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-    Prefer: prefer,
   };
 }
 
@@ -85,7 +74,7 @@ export default async function handler(request, response) {
 
   try {
     if (request.method === "GET") {
-      const upstream = await fetch(
+      const upstream = await supabaseRequest(
         `${config.endpoint}?select=id,question,answer,category,keywords,scenario,note,source,created_at,updated_at&is_active=eq.true&order=source.asc,updated_at.desc`,
         {
           headers: supabaseHeaders(config.key, ""),
@@ -116,10 +105,10 @@ export default async function handler(request, response) {
         return;
       }
 
-      const upstream = await fetch(config.endpoint, {
+      const upstream = await supabaseRequest(config.endpoint, {
         method: "POST",
         headers: supabaseHeaders(config.key),
-        body: JSON.stringify(items),
+        body: items,
       });
 
       if (!upstream.ok) {
@@ -151,10 +140,10 @@ export default async function handler(request, response) {
         return;
       }
 
-      const upstream = await fetch(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
+      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
         method: "PATCH",
         headers: supabaseHeaders(config.key),
-        body: JSON.stringify(reply),
+        body: reply,
       });
 
       if (!upstream.ok) {
@@ -186,10 +175,10 @@ export default async function handler(request, response) {
         return;
       }
 
-      const upstream = await fetch(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
+      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
         method: "PATCH",
         headers: supabaseHeaders(config.key),
-        body: JSON.stringify({ is_active: false }),
+        body: { is_active: false },
       });
 
       if (!upstream.ok) {

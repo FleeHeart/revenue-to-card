@@ -1,3 +1,5 @@
+import { normalizeSupabaseUrl, supabaseHeaders, supabaseRequest } from "./supabaseHttp.js";
+
 const allowedEvents = new Set([
   "page_view",
   "field_drawer_opened",
@@ -6,10 +8,6 @@ const allowedEvents = new Set([
   "platform_selected",
   "calculation_ready",
 ]);
-
-function normalizeSupabaseUrl(url) {
-  return url.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-}
 
 export default async function handler(request, response) {
   if (request.method === "OPTIONS") {
@@ -48,21 +46,16 @@ export default async function handler(request, response) {
   const endpoint = `${normalizeSupabaseUrl(supabaseUrl)}/rest/v1/analytics_events`;
   let result;
   try {
-    result = await fetch(endpoint, {
+    result = await supabaseRequest(endpoint, {
       method: "POST",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
+      headers: supabaseHeaders(supabaseKey, "return=minimal"),
+      body: {
         event_name: event.event_name,
         session_id: String(event.session_id).slice(0, 128),
         page_url: event.page_url ? String(event.page_url).slice(0, 2048) : null,
         user_agent: event.user_agent ? String(event.user_agent).slice(0, 512) : null,
         payload: event.payload && typeof event.payload === "object" ? event.payload : {},
-      }),
+      },
     });
   } catch (error) {
     console.error("Analytics fetch failed", {
