@@ -46,6 +46,8 @@ alter table public.reply_items enable row level security;
 
 grant usage on schema public to anon;
 grant select on public.reply_items to anon;
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.reply_items to service_role;
 
 drop policy if exists "Allow anonymous reply reads" on public.reply_items;
 
