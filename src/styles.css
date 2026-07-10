@@ -3297,6 +3297,203 @@ select.field-input {
   line-height: 1.55;
 }
 
+/* Performance-oriented visual pass: solid surfaces paint faster than heavy glass. */
+:root {
+  --bg: 210 38% 98%;
+  --surface: 0 0% 100% / 0.94;
+  --surface-strong: 0 0% 100% / 1;
+  --border: 215 22% 78% / 0.7;
+  --text: 222 38% 12%;
+  --muted: 218 13% 38%;
+  --accent-a: 191 86% 42%;
+  --accent-b: 258 76% 58%;
+  --accent-c: 44 94% 55%;
+}
+
+.dark {
+  --bg: 222 33% 8%;
+  --surface: 222 24% 14% / 0.94;
+  --surface-strong: 222 22% 17% / 1;
+  --border: 217 18% 29% / 0.75;
+  --text: 214 32% 94%;
+  --muted: 216 14% 70%;
+  --accent-a: 190 86% 52%;
+  --accent-b: 265 84% 68%;
+  --accent-c: 43 94% 64%;
+}
+
+main {
+  overflow: visible;
+}
+
+.workspace-shell {
+  background:
+    linear-gradient(180deg, hsl(var(--bg)), hsl(var(--bg))),
+    hsl(var(--bg));
+  overflow: visible;
+}
+
+.workspace-shell,
+.workspace-shell * {
+  backdrop-filter: none !important;
+}
+
+.workspace-shell::before,
+.home-console::before,
+.hero-panel::after,
+.field-drawer::before,
+.bill-modal::before,
+.reply-assistant-page::before {
+  display: none;
+}
+
+.app-topbar,
+.home-hero,
+.home-console,
+.home-support-grid section,
+.hero-panel,
+.glass-panel,
+.glass-card,
+.task-card,
+.metric-card,
+.flow-step,
+.field-drawer,
+.bill-modal,
+.reply-assistant-page,
+.reply-editor {
+  background: hsl(var(--surface-strong));
+  box-shadow: 0 8px 18px hsl(220 28% 15% / 0.08);
+  backdrop-filter: none;
+}
+
+.dark .app-topbar,
+.dark .home-hero,
+.dark .home-console,
+.dark .home-support-grid section,
+.dark .hero-panel,
+.dark .glass-panel,
+.dark .glass-card,
+.dark .task-card,
+.dark .metric-card,
+.dark .flow-step,
+.dark .field-drawer,
+.dark .bill-modal,
+.dark .reply-assistant-page,
+.dark .reply-editor {
+  box-shadow: 0 10px 24px hsl(222 45% 2% / 0.22);
+}
+
+.app-nav,
+.filter-strip,
+.field-search-panel,
+.reply-toolbar,
+.reply-side-panel,
+.reply-detail-panel,
+.bill-control-panel,
+.bill-preview-panel {
+  background: hsl(var(--surface));
+  backdrop-filter: none;
+}
+
+.task-card {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.task-card:hover,
+.task-card:focus-within {
+  border-color: hsl(var(--accent-b) / 0.42);
+  background: hsl(var(--surface-strong));
+  box-shadow: 0 10px 22px hsl(220 28% 15% / 0.1);
+  transform: none;
+}
+
+.feature-entry-card::after {
+  opacity: 0.55;
+  transition: opacity 140ms ease;
+  transform: none;
+}
+
+.feature-entry-card:hover::after,
+.feature-entry-card:focus-visible::after {
+  opacity: 0.95;
+  transform: none;
+}
+
+.primary-hero-action,
+.secondary-hero-action,
+.reply-primary-button,
+.reply-danger-button,
+.bill-download-button {
+  box-shadow: none;
+}
+
+.primary-hero-action:hover,
+.primary-hero-action:focus-visible,
+.secondary-hero-action:hover,
+.secondary-hero-action:focus-visible,
+.reply-primary-button:hover,
+.reply-primary-button:focus-visible,
+.text-button:hover,
+.text-button:focus-visible,
+.bill-download-button:hover,
+.bill-download-button:focus-visible,
+.field-list-card:hover,
+.field-list-card:focus-visible,
+.reply-list-card:hover,
+.reply-list-card:focus-visible {
+  transform: none;
+}
+
+.field-drawer-layer,
+.bill-modal-layer,
+.reply-editor-layer {
+  contain: layout paint;
+}
+
+.field-list-pane,
+.field-detail-pane,
+.reply-side-panel,
+.reply-detail-panel,
+.bill-preview-panel {
+  contain: content;
+}
+
+.field-list-card,
+.reply-list-card,
+.summary-row,
+.calendar-cell,
+.bill-log-card,
+.bill-map-card,
+.reply-answer-card,
+.reply-keyword-panel,
+.reply-info-grid section {
+  content-visibility: auto;
+  contain-intrinsic-size: 96px;
+}
+
+.field-drawer-scrim,
+.bill-modal-scrim,
+.reply-editor-scrim {
+  background: hsl(220 25% 10% / 0.32);
+  backdrop-filter: none;
+}
+
+.reply-load-more {
+  min-height: 2.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--surface-strong));
+  color: hsl(var(--text));
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.reply-load-more:hover,
+.reply-load-more:focus-visible {
+  border-color: hsl(var(--accent-b) / 0.5);
+  outline: none;
+}
+
 @media (max-width: 1024px) {
   .app-topbar {
     grid-template-columns: minmax(0, 1fr) auto;

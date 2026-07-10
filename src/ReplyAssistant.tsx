@@ -16,8 +16,10 @@ import {
   X,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { defaultReplyItems, emptyReplyDraft, type ReplyDraft, type ReplyItem, type ReplySource } from "./replyAssistantData";
+
+const REPLY_PAGE_SIZE = 80;
 
 const COLUMN_ALIASES = {
   question: ["问题", "提问", "问法", "Q", "q", "question", "Question"],
@@ -44,14 +46,16 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
   const [uploadMessage, setUploadMessage] = useState("");
   const [dataMessage, setDataMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(REPLY_PAGE_SIZE);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const allItems = customItems;
+  const deferredQuery = useDeferredValue(query);
   const categories = useMemo(() => ["全部", ...unique(allItems.map((item) => item.category).filter(Boolean))], [allItems]);
   const keywords = useMemo(() => ["全部", ...unique(allItems.flatMap((item) => item.keywords).filter(Boolean))], [allItems]);
 
   const filteredItems = useMemo(() => {
-    const normalizedQuery = normalize(query);
+    const normalizedQuery = normalize(deferredQuery);
     return allItems.filter((item) => {
       if (source !== "all" && item.source !== source) return false;
       if (category !== "全部" && item.category !== category) return false;
@@ -59,10 +63,12 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
       if (!normalizedQuery) return true;
       return normalize(buildSearchText(item)).includes(normalizedQuery);
     });
-  }, [allItems, category, keyword, query, source]);
+  }, [allItems, category, deferredQuery, keyword, source]);
 
   const activeItem = filteredItems.find((item) => item.id === activeId) ?? filteredItems[0] ?? allItems[0];
   const customCount = customItems.filter((item) => item.source === "custom").length;
+  const visibleItems = filteredItems.slice(0, visibleLimit);
+  const hasMoreItems = visibleLimit < filteredItems.length;
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +98,10 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (activeItem) setActiveId(activeItem.id);
   }, [activeItem?.id]);
+
+  useEffect(() => {
+    setVisibleLimit(REPLY_PAGE_SIZE);
+  }, [category, deferredQuery, keyword, source]);
 
   async function saveDraft(draft: ReplyDraft, original?: ReplyItem) {
     const payload = {
@@ -262,7 +272,7 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
                 <span>换个关键词，或新增一条常用回复。</span>
               </div>
             ) : (
-              filteredItems.map((item) => (
+              visibleItems.map((item) => (
                 <button key={item.id} className={`reply-list-card ${activeItem?.id === item.id ? "is-active" : ""}`} type="button" onClick={() => setActiveId(item.id)}>
                   <span className="reply-list-card-head">
                     <strong>{item.question}</strong>
@@ -272,6 +282,11 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
                   <em>{item.category || "未分类"}</em>
                 </button>
               ))
+            )}
+            {hasMoreItems && (
+              <button className="reply-load-more" type="button" onClick={() => setVisibleLimit((current) => current + REPLY_PAGE_SIZE)}>
+                加载更多
+              </button>
             )}
           </div>
         </aside>
@@ -576,7 +591,7 @@ function ReplyEditor({
 async function fetchReplyItems() {
   const response = await fetch("/api/replies");
   if (!response.ok) throw new Error(await apiError(response, "线上回复库暂时不可用，当前显示默认兜底库"));
-  const rows = (await response.json()) as unknown[];
+  const rows = ((await response.json().catch(() => [])) as unknown[]);
   return rows.map(mapApiReply).filter((item) => item.question && item.answer);
 }
 

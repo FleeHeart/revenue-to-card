@@ -62,6 +62,27 @@ type DetailRow = {
 type ValidationMap = Partial<Record<PlatformId, Partial<Record<keyof PlatformForm, string>>>>;
 
 const fieldCategories = ["全部", "营业中心", "智慧门店", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
+const fieldSearchIndex = new Map(
+  fieldDefinitions.map((field) => [
+    field.id,
+    [
+      field.name,
+      field.category,
+      field.source,
+      field.summary,
+      field.formula,
+      field.misread,
+      field.example,
+      field.toolUsage,
+      field.tags.join(" "),
+      field.drill?.join(" "),
+      field.relatedFieldIds.map((id) => getFieldName(id)).join(" "),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  ]),
+);
 const BillProcessorModal = lazy(() => import("./BillProcessorModal").then((module) => ({ default: module.BillProcessorModal })));
 const ReplyAssistant = lazy(() => import("./ReplyAssistant").then((module) => ({ default: module.ReplyAssistant })));
 
@@ -266,8 +287,7 @@ export function App() {
   const [forms, setForms] = useState<Record<PlatformId, PlatformForm>>(buildInitialForms);
   const [filters, setFilters] = useState({ start: "", end: "" });
   const [view, setView] = useState<ViewMode>("board");
-  const [theme, setTheme] = useState<ThemeMode>("dark");
-  const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [route, setRoute] = useState<AppRoute>(() => getRouteFromPath(window.location.pathname));
   const trackedCalculationKey = useRef("");
 
@@ -284,17 +304,6 @@ export function App() {
   useEffect(() => {
     trackEvent("page_view", { page: route });
   }, [route]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIsLoading(false), 520);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = window.setTimeout(() => setIsLoading(false), 260);
-    return () => window.clearTimeout(timer);
-  }, [selected, forms, filters]);
 
   const errors = useMemo(() => validate(selected, forms), [selected, forms]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -467,12 +476,12 @@ export function App() {
 
                     return (
                       <motion.section
-                        layout
                         key={id}
                         className="entry-card task-card"
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.12 }}
                       >
                         <div className="mb-4 flex items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-3">
@@ -633,25 +642,20 @@ export function App() {
                   </button>
                 </div>
 
-                {isLoading ? (
-                  <div className="grid gap-3 xl:grid-cols-2">
-                    <SkeletonCard />
-                    <SkeletonCard />
-                  </div>
-                ) : selected.length === 0 || hasErrors || filteredDetails.length === 0 ? (
+                {selected.length === 0 || hasErrors || filteredDetails.length === 0 ? (
                   <EmptyState
                     title={hasErrors ? "先修正录入项" : selected.length === 0 ? "暂无核算结果" : "当前筛选没有结果"}
                     action={hasErrors ? "错误项已标记" : "结果会在这里出现"}
                     hint={selected.length === 0 ? "先选平台并录入金额" : "调整录入项或筛选条件后刷新视图"}
                   />
                 ) : (
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence initial={false}>
                     <motion.div
                       key={view}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
                     >
                       {view === "board" && <BoardView details={filteredDetails} summary={summary} />}
                       {view === "list" && <ListView details={filteredDetails} summary={summary} />}
@@ -812,7 +816,7 @@ function HomePortal({ today, onNavigate }: { today: string; onNavigate: (route: 
 
   return (
     <section className="home-portal mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:px-6 lg:px-8">
-      <motion.div className="home-hero" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+      <motion.div className="home-hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14 }}>
         <div className="home-copy">
           <span className="system-chip">
             <Sparkles className="h-3.5 w-3.5" />
@@ -863,15 +867,15 @@ function HomePortal({ today, onNavigate }: { today: string; onNavigate: (route: 
       </motion.div>
 
       <div className="feature-entry-grid">
-        {features.map((feature, index) => (
+        {features.map((feature) => (
           <motion.button
             key={feature.route}
             className={`feature-entry-card task-card is-${feature.route}`}
             type="button"
             onClick={() => onNavigate(feature.route)}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.04 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.12 }}
           >
             <span className={`feature-entry-icon bg-gradient-to-br ${feature.accent}`}>{feature.icon}</span>
             <span className="feature-entry-copy">
@@ -1022,23 +1026,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
         const categoryMatched = category === "全部" || field.category === category || field.tags.includes(category);
         if (!categoryMatched) return false;
         if (!keyword) return true;
-        const searchableText = [
-          field.name,
-          field.category,
-          field.source,
-          field.summary,
-          field.formula,
-          field.misread,
-          field.example,
-          field.toolUsage,
-          field.tags.join(" "),
-          field.drill?.join(" "),
-          field.relatedFieldIds.map((id) => getFieldName(id)).join(" "),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return searchableText.includes(keyword);
+        return (fieldSearchIndex.get(field.id) ?? "").includes(keyword);
       })
       .sort((a, b) => relevanceRank(b) - relevanceRank(a));
   }, [category, query]);
@@ -1183,8 +1171,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                 ) : (
                   <div className="field-list">
                     {filteredFields.map((field) => (
-                      <motion.button
-                        layout
+                      <button
                         key={field.id}
                         type="button"
                         className={`field-list-card ${activeField?.id === field.id ? "is-active" : ""}`}
@@ -1201,7 +1188,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                             <em key={tag}>{tag}</em>
                           ))}
                         </span>
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -1340,7 +1327,7 @@ function BoardView({
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
       <div className="grid gap-3 xl:grid-cols-2">
         {details.map((item) => (
-          <motion.article layout className="task-card p-4" key={item.platform.id}>
+          <article className="task-card p-4" key={item.platform.id}>
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <span className={`badge-gradient bg-gradient-to-br ${item.platform.accent}`}>{item.platform.badge}</span>
@@ -1358,7 +1345,7 @@ function BoardView({
               <InfoPill label="品牌抽佣" value={formatMoney(item.commission)} />
               <InfoPill label="到卡日期" value={formatDate(item.arrivalDate)} />
             </div>
-          </motion.article>
+          </article>
         ))}
       </div>
       <div className="grid content-start gap-3">
