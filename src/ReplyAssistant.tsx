@@ -359,8 +359,8 @@ function ReplyDetail({
   return (
     <div className="reply-detail-stack">
       <div className="reply-detail-hero">
-        <div>
-          <span>{item.source === "default" ? "默认回复" : "我的回复"}</span>
+        <div className="reply-detail-heading">
+          <span className="reply-detail-source">{item.source === "default" ? "默认回复" : "我的回复"}</span>
           <h2>{item.question}</h2>
         </div>
         <div className="reply-detail-actions">
@@ -380,9 +380,12 @@ function ReplyDetail({
       </div>
 
       <section className="reply-answer-card">
-        <div>
-          <Clipboard className="h-4 w-4" />
-          <span>复制时仅复制以下回复内容</span>
+        <div className="reply-answer-head">
+          <span>
+            <Clipboard className="h-4 w-4" />
+            回复内容
+          </span>
+          <small>复制时仅复制本段</small>
         </div>
         <p>{item.answer}</p>
       </section>
