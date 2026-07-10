@@ -415,7 +415,7 @@ export function App() {
           onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         />
 
-        {route === "home" && <HomePortal today={isoToday} onNavigate={navigate} />}
+        {route === "home" && <HomePortal today={isoToday} />}
 
         {route === "calculator" && <section className="process-grid mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
           <StepIndicator
@@ -764,59 +764,7 @@ function AppTopBar({
   );
 }
 
-function HomePortal({ today, onNavigate }: { today: string; onNavigate: (route: AppRoute) => void }) {
-  const features: Array<{
-    route: AppRoute;
-    title: string;
-    text: string;
-    meta: string;
-    stat: string;
-    foot: string;
-    icon: ReactNode;
-    accent: string;
-  }> = [
-    {
-      route: "calculator",
-      title: "核算工具",
-      text: "按平台账期、抽佣比例和营收周期，生成门店预计到卡日期、明细与汇总视图。",
-      meta: "T+N 到卡测算",
-      stat: "7 平台",
-      foot: "到账节奏、佣金扣减、日历视图",
-      icon: <WalletCards className="h-5 w-5" />,
-      accent: "from-lime-200 via-emerald-300 to-teal-300",
-    },
-    {
-      route: "bill",
-      title: "账单处理",
-      text: "上传京东秒送账单，完成字段识别、清洗映射、拆分账单和 Zip 打包下载。",
-      meta: "本地解析账单",
-      stat: "XLSX",
-      foot: "模板映射、清洗日志、打包下载",
-      icon: <Database className="h-5 w-5" />,
-      accent: "from-teal-200 via-lime-300 to-amber-200",
-    },
-    {
-      route: "fields",
-      title: "字段说明",
-      text: "查询数据中心字段口径、公式、常见误解和关联字段，减少对账沟通成本。",
-      meta: `${fieldDefinitions.length} 个字段口径`,
-      stat: "口径库",
-      foot: "字段搜索、公式解释、关联跳转",
-      icon: <BookOpen className="h-5 w-5" />,
-      accent: "from-amber-200 via-orange-300 to-rose-300",
-    },
-    {
-      route: "reply",
-      title: "回复助手",
-      text: "维护常用 Q/A 和标准话术，按问题、关键词、场景快速筛选，并一键复制回复内容。",
-      meta: "Q/A 话术库",
-      stat: "复制",
-      foot: "上传导入、增删改查、全量检索",
-      icon: <MessageSquareText className="h-5 w-5" />,
-      accent: "from-cyan-200 via-lime-300 to-emerald-300",
-    },
-  ];
-
+function HomePortal({ today }: { today: string }) {
   return (
     <section className="home-portal mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:px-6 lg:px-8">
       <motion.div className="home-hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14 }}>
@@ -826,72 +774,23 @@ function HomePortal({ today, onNavigate }: { today: string; onNavigate: (route: 
             FuYao · {today}
           </span>
           <h1>扶摇</h1>
-          <p>把平台账单、到账测算、字段口径和标准回复集中到一个入口。少解释几轮，多给一份能直接对账和沟通的结果。</p>
-          <div className="hero-action-row">
-            <button className="primary-hero-action" type="button" onClick={() => onNavigate("calculator")}>
-              <WalletCards className="h-4 w-4" />
-              开始核算
-            </button>
-            <button className="secondary-hero-action" type="button" onClick={() => onNavigate("bill")}>
-              处理账单
-            </button>
-          </div>
+          <p>
+            这是我结合公司日常业务整理的一些小工具：把账单处理、到账核算、字段口径和常用回复放在一起，先帮自己少做重复工作，也希望分享给大家提升效率。
+            如果你有更顺手的用法、想补充的场景或改进建议，欢迎随时告诉我。
+          </p>
         </div>
-        <div className="home-console" aria-label="系统基础能力">
-          <div className="console-header">
-            <span>LIVE WORKFLOW</span>
-            <strong>4</strong>
+        <div className="home-intro-card" aria-label="反馈与联系">
+          <div className="intro-card-copy">
+            <span>建议入口</span>
+            <strong>一起把工具变得更顺手</strong>
+            <p>扫码加我微信，反馈问题、提新需求，或者把你常用的业务场景发给我，我会尽量整理进来。</p>
           </div>
-          <div className="console-track">
-            <span>账单</span>
-            <span>清洗</span>
-            <span>核算</span>
-            <span>回复</span>
-          </div>
-          <div className="system-capabilities">
-            <span>
-              <small>01</small>
-              平台账期统一换算
-            </span>
-            <span>
-              <small>02</small>
-              账单清洗与拆分
-            </span>
-            <span>
-              <small>03</small>
-              字段口径快速检索
-            </span>
-            <span>
-              <small>04</small>
-              回复话术一键复制
-            </span>
+          <div className="wechat-qr-card">
+            <img src="/wechat-harvin-qr.jpg" alt="Harvin 微信二维码" />
+            <span>Harvin · 微信反馈</span>
           </div>
         </div>
       </motion.div>
-
-      <div className="feature-entry-grid">
-        {features.map((feature) => (
-          <motion.button
-            key={feature.route}
-            className={`feature-entry-card task-card is-${feature.route}`}
-            type="button"
-            onClick={() => onNavigate(feature.route)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.12 }}
-          >
-            <span className={`feature-entry-icon bg-gradient-to-br ${feature.accent}`}>{feature.icon}</span>
-            <span className="feature-entry-copy">
-              <small>{feature.meta}</small>
-              <strong>{feature.title}</strong>
-              <span>{feature.text}</span>
-            </span>
-            <span className="feature-entry-stat">{feature.stat}</span>
-            <span className="feature-entry-foot">{feature.foot}</span>
-            <ArrowRight className="feature-entry-arrow h-5 w-5" />
-          </motion.button>
-        ))}
-      </div>
 
       <div className="home-support-grid">
         <section>
