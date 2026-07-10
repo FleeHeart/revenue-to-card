@@ -382,6 +382,63 @@ select {
   font-weight: 900;
 }
 
+.home-feature-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.home-feature-summary-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 0.58rem 0.65rem;
+  min-width: 0;
+  min-height: 136px;
+  align-content: start;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--surface-strong));
+  color: hsl(var(--text));
+  padding: 0.92rem;
+  box-shadow: 0 8px 18px hsl(220 28% 15% / 0.08);
+}
+
+.home-feature-summary-icon {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--accent-b) / 0.22);
+  border-radius: 8px;
+  background: hsl(var(--accent-b) / 0.1);
+  color: hsl(var(--accent-b));
+}
+
+.home-feature-summary-card strong {
+  align-self: center;
+  min-width: 0;
+  font-size: 0.98rem;
+  font-weight: 950;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.home-feature-summary-card p {
+  grid-column: 1 / -1;
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: hsl(var(--muted));
+  font-size: 0.82rem;
+  font-weight: 720;
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .hero-action-row {
   display: flex;
   flex-wrap: wrap;
@@ -3449,6 +3506,7 @@ main {
 .home-hero,
 .home-console,
 .home-intro-card,
+.home-feature-summary-card,
 .home-support-grid section,
 .hero-panel,
 .glass-panel,
@@ -3469,6 +3527,7 @@ main {
 .dark .home-hero,
 .dark .home-console,
 .dark .home-intro-card,
+.dark .home-feature-summary-card,
 .dark .home-support-grid section,
 .dark .hero-panel,
 .dark .glass-panel,
@@ -3793,6 +3852,10 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .home-feature-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hero-panel {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -3880,6 +3943,7 @@ main {
   }
 
   .system-capabilities,
+  .home-feature-summary-grid,
   .home-support-grid {
     grid-template-columns: 1fr;
   }

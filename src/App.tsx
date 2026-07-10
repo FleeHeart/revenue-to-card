@@ -765,6 +765,29 @@ function AppTopBar({
 }
 
 function HomePortal({ today }: { today: string }) {
+  const featureSummaries: Array<{ title: string; desc: string; icon: ReactNode }> = [
+    {
+      title: "核算工具",
+      desc: "按平台账期和营收周期，快速测算门店预计到卡时间与金额明细。",
+      icon: <WalletCards className="h-4 w-4" />,
+    },
+    {
+      title: "账单处理",
+      desc: "上传账单后完成字段识别、清洗拆分和打包下载，减少手动整理。",
+      icon: <Database className="h-4 w-4" />,
+    },
+    {
+      title: "字段说明",
+      desc: "集中查询字段口径、统计范围和常见误解，方便对账时统一说法。",
+      icon: <BookOpen className="h-4 w-4" />,
+    },
+    {
+      title: "回复助手",
+      desc: "沉淀常用 Q/A 和标准回复，按关键词检索后一键复制给同事或门店。",
+      icon: <MessageSquareText className="h-4 w-4" />,
+    },
+  ];
+
   return (
     <section className="home-portal mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:px-6 lg:px-8">
       <motion.div className="home-hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14 }}>
@@ -791,6 +814,16 @@ function HomePortal({ today }: { today: string }) {
           </div>
         </div>
       </motion.div>
+
+      <div className="home-feature-summary-grid" aria-label="功能说明">
+        {featureSummaries.map((feature) => (
+          <section className="home-feature-summary-card" key={feature.title}>
+            <span className="home-feature-summary-icon">{feature.icon}</span>
+            <strong>{feature.title}</strong>
+            <p>{feature.desc}</p>
+          </section>
+        ))}
+      </div>
 
       <div className="home-support-grid">
         <section>
