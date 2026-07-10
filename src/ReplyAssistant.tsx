@@ -1,4 +1,3 @@
-import ExcelJS from "exceljs";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -153,7 +152,7 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <motion.section className="reply-assistant-page" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+    <motion.section className="reply-assistant-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }}>
       <header className="reply-page-header">
         <div className="reply-page-title">
           <span className="panel-icon">
@@ -663,6 +662,7 @@ async function parseWorkbookFile(file: File) {
   if (!file.name.toLowerCase().endsWith(".xlsx")) {
     throw new Error("请上传 .xlsx 或 .csv 文件");
   }
+  const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
   const worksheet = workbook.worksheets[0];

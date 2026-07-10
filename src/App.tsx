@@ -62,6 +62,7 @@ type DetailRow = {
 type ValidationMap = Partial<Record<PlatformId, Partial<Record<keyof PlatformForm, string>>>>;
 
 const fieldCategories = ["全部", "营业中心", "智慧门店", "财务中心", "轻量核算", "资金/到账", "服务费/佣金", "余额/提现", "订阅/台账", "对账/异常"];
+const FIELD_PAGE_SIZE = 24;
 const fieldSearchIndex = new Map(
   fieldDefinitions.map((field) => [
     field.id,
@@ -677,10 +678,12 @@ export function App() {
             </span>
           </div>
         </section>}
-        <FieldGuideDrawer open={route === "fields"} onClose={() => navigate("home")} />
-        <Suspense fallback={<FeaturePageSkeleton />}>
-          <BillProcessorModal open={route === "bill"} onClose={() => navigate("home")} />
-        </Suspense>
+        {route === "fields" && <FieldGuideDrawer open onClose={() => navigate("home")} />}
+        {route === "bill" && (
+          <Suspense fallback={<FeaturePageSkeleton />}>
+            <BillProcessorModal open onClose={() => navigate("home")} />
+          </Suspense>
+        )}
         <Suspense fallback={<FeaturePageSkeleton />}>
           {route === "reply" && <ReplyAssistant onClose={() => navigate("home")} />}
         </Suspense>
@@ -1013,6 +1016,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("全部");
   const [activeFieldId, setActiveFieldId] = useState(fieldDefinitions[0]?.id ?? "");
+  const [visibleLimit, setVisibleLimit] = useState(FIELD_PAGE_SIZE);
   const trackedOpenRef = useRef(false);
   const highRelevanceCount = fieldDefinitions.filter((field) => field.toolRelevance === "high").length;
   const financeCount = fieldDefinitions.filter((field) => field.category === "财务中心").length;
@@ -1034,12 +1038,18 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   const activeField = useMemo(() => {
     return filteredFields.find((field) => field.id === activeFieldId) ?? filteredFields[0] ?? null;
   }, [activeFieldId, filteredFields]);
+  const visibleFields = filteredFields.slice(0, visibleLimit);
+  const hasMoreFields = visibleLimit < filteredFields.length;
 
   useEffect(() => {
     if (filteredFields.length > 0 && !filteredFields.some((field) => field.id === activeFieldId)) {
       setActiveFieldId(filteredFields[0].id);
     }
   }, [activeFieldId, filteredFields]);
+
+  useEffect(() => {
+    setVisibleLimit(FIELD_PAGE_SIZE);
+  }, [category, query]);
 
   useEffect(() => {
     if (!open) return;
@@ -1083,17 +1093,13 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {open && (
-        <motion.div className="field-drawer-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <motion.div className="field-drawer-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }}>
           <button className="field-drawer-scrim" type="button" aria-label="关闭字段说明" onClick={onClose} />
-          <motion.aside
+          <aside
             className="field-drawer"
             aria-label="数据中心字段说明"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2 }}
           >
             <header className="field-drawer-header">
               <div className="field-drawer-title">
@@ -1170,7 +1176,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                   <FieldGuideEmpty />
                 ) : (
                   <div className="field-list">
-                    {filteredFields.map((field) => (
+                    {visibleFields.map((field) => (
                       <button
                         key={field.id}
                         type="button"
@@ -1190,6 +1196,11 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                         </span>
                       </button>
                     ))}
+                    {hasMoreFields && (
+                      <button className="field-load-more" type="button" onClick={() => setVisibleLimit((current) => current + FIELD_PAGE_SIZE)}>
+                        加载更多
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1198,7 +1209,7 @@ function FieldGuideDrawer({ open, onClose }: { open: boolean; onClose: () => voi
                 {activeField ? <FieldDetail field={activeField} onSelectRelated={(field) => selectField(field)} /> : <FieldGuideEmpty />}
               </div>
             </section>
-          </motion.aside>
+          </aside>
         </motion.div>
       )}
     </AnimatePresence>
@@ -1209,12 +1220,9 @@ function FieldDetail({ field, onSelectRelated }: { field: FieldDefinition; onSel
   const relatedFields = field.relatedFieldIds.map((id) => fieldDefinitions.find((item) => item.id === id)).filter(Boolean) as FieldDefinition[];
 
   return (
-    <motion.article
+    <article
       key={field.id}
       className="field-detail-card"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
     >
       <div className="field-detail-hero">
         <div>
@@ -1265,7 +1273,7 @@ function FieldDetail({ field, onSelectRelated }: { field: FieldDefinition; onSel
           )}
         </div>
       </section>
-    </motion.article>
+    </article>
   );
 }
 

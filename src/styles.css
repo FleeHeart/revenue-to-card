@@ -3478,6 +3478,7 @@ main {
   backdrop-filter: none;
 }
 
+.field-load-more,
 .reply-load-more {
   min-height: 2.5rem;
   border: 1px solid hsl(var(--border));
@@ -3488,10 +3489,30 @@ main {
   font-weight: 850;
 }
 
+.field-load-more:hover,
+.field-load-more:focus-visible,
 .reply-load-more:hover,
 .reply-load-more:focus-visible {
   border-color: hsl(var(--accent-b) / 0.5);
   outline: none;
+}
+
+.field-list-card,
+.reply-list-card {
+  background: hsl(var(--surface-strong));
+  box-shadow: none;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.field-list-card:hover,
+.field-list-card:focus-visible,
+.field-list-card.is-active,
+.reply-list-card:hover,
+.reply-list-card:focus-visible,
+.reply-list-card.is-active {
+  background: hsl(var(--accent-b) / 0.07);
+  box-shadow: none;
+  transform: none;
 }
 
 @media (max-width: 1024px) {
