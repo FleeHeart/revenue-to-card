@@ -102,15 +102,15 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
     setVisibleLimit(REPLY_PAGE_SIZE);
   }, [category, deferredQuery, keyword, source]);
 
-  async function saveDraft(draft: ReplyDraft, original?: ReplyItem) {
+  async function saveDraft(draft: ReplyDraft, password: string, original?: ReplyItem) {
     const payload = {
       ...draft,
       keywords: normalizeKeywords(draft.keywords),
-      source: "custom" as const,
+      source: original?.source ?? ("custom" as const),
     };
-    const saved = original?.source === "custom" ? await updateReplyItem(original.id, payload) : await createReplyItem(payload);
+    const saved = original ? await updateReplyItem(original.id, payload, password) : await createReplyItem(payload, password);
     setCustomItems((current) => {
-      if (original?.source === "custom") {
+      if (original) {
         return current.map((item) => (item.id === original.id ? saved : item));
       }
       return [saved, ...current];
@@ -120,7 +120,6 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
   }
 
   async function deleteItem(item: ReplyItem, password: string) {
-    if (item.source !== "custom") return;
     await deleteReplyItem(item.id, password);
     setCustomItems((current) => current.filter((entry) => entry.id !== item.id));
     setActiveId(defaultReplyItems[0]?.id ?? "");
@@ -135,13 +134,18 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
   async function handleUpload(file?: File) {
     if (!file) return;
     setUploadMessage("");
+    const password = window.prompt("请输入操作密码");
+    if (!password) {
+      setUploadMessage("已取消导入");
+      return;
+    }
     try {
       const imported = file.name.toLowerCase().endsWith(".csv") ? await parseCsvFile(file) : await parseWorkbookFile(file);
       if (imported.length === 0) {
         setUploadMessage("没有识别到可导入的回复数据");
         return;
       }
-      const saved = await createReplyItems(imported.map(({ id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...item }) => item));
+      const saved = await createReplyItems(imported.map(({ id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...item }) => item), password);
       setCustomItems((current) => [...saved, ...current]);
       setActiveId(saved[0]?.id ?? imported[0].id);
       setUploadMessage(`已导入 ${saved.length} 条回复`);
@@ -316,8 +320,8 @@ export function ReplyAssistant({ onClose }: { onClose: () => void }) {
             mode={editor.mode}
             item={editor.item}
             onCancel={() => setEditor(null)}
-            onSave={async (draft) => {
-              await saveDraft(draft, editor.item);
+            onSave={async (draft, password) => {
+              await saveDraft(draft, password, editor.item);
               setDataMessage("已保存到线上回复库");
               window.setTimeout(() => setDataMessage(""), 1800);
             }}
@@ -366,9 +370,9 @@ function ReplyDetail({
           </button>
           <button className="text-button" type="button" onClick={onEdit}>
             <Pencil className="h-4 w-4" />
-            {item.source === "default" ? "复制后编辑" : "编辑"}
+            编辑
           </button>
-          <button className="text-button" type="button" disabled={item.source !== "custom"} title={item.source === "custom" ? "删除我的回复" : "默认库回复不可删除"} onClick={onDelete}>
+          <button className="text-button" type="button" title="删除回复" onClick={onDelete}>
             <Trash2 className="h-4 w-4" />
             删除
           </button>
@@ -498,7 +502,7 @@ function ReplyEditor({
   mode: EditMode;
   item?: ReplyItem;
   onCancel: () => void;
-  onSave: (draft: ReplyDraft) => void | Promise<void>;
+  onSave: (draft: ReplyDraft, password: string) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<ReplyDraft>(() => ({
     ...emptyReplyDraft,
@@ -507,8 +511,9 @@ function ReplyEditor({
   }));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
 
-  const canSave = draft.question.trim() && draft.answer.trim();
+  const canSave = draft.question.trim() && draft.answer.trim() && password.trim();
 
   function update<K extends keyof ReplyDraft>(key: K, value: ReplyDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -529,7 +534,7 @@ function ReplyEditor({
           setIsSaving(true);
           setError("");
           try {
-            await onSave(draft);
+            await onSave(draft, password);
           } catch (caught) {
             setError(caught instanceof Error ? caught.message : "保存回复失败");
           } finally {
@@ -539,8 +544,8 @@ function ReplyEditor({
       >
         <header>
           <div>
-            <strong>{mode === "create" ? "新增回复" : item?.source === "default" ? "复制默认回复" : "编辑回复"}</strong>
-            <span>保存后进入我的回复库</span>
+            <strong>{mode === "create" ? "新增回复" : "编辑回复"}</strong>
+            <span>保存需要操作密码</span>
           </div>
           <button className="icon-button" type="button" aria-label="关闭" onClick={onCancel}>
             <X className="h-4 w-4" />
@@ -573,6 +578,19 @@ function ReplyEditor({
           备注
           <textarea className="field-input" rows={3} value={draft.note ?? ""} onChange={(event) => update("note", event.target.value)} />
         </label>
+        <label>
+          操作密码
+          <input
+            className="field-input"
+            type="password"
+            value={password}
+            placeholder="请输入操作密码"
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError("");
+            }}
+          />
+        </label>
         {error && <p className="reply-editor-error">{error}</p>}
         <footer>
           <button className="text-button" type="button" onClick={onCancel}>
@@ -594,28 +612,28 @@ async function fetchReplyItems() {
   return rows.map(mapApiReply).filter((item) => item.question && item.answer);
 }
 
-async function createReplyItem(draft: ReplyDraft & { source: ReplySource }) {
-  const [item] = await createReplyItems([draft]);
+async function createReplyItem(draft: ReplyDraft & { source: ReplySource }, password: string) {
+  const [item] = await createReplyItems([draft], password);
   if (!item) throw new Error("保存回复失败");
   return item;
 }
 
-async function createReplyItems(items: Array<ReplyDraft & { source: ReplySource }>) {
+async function createReplyItems(items: Array<ReplyDraft & { source: ReplySource }>, password: string) {
   const response = await fetch("/api/replies", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ items, password }),
   });
   if (!response.ok) throw new Error(await apiError(response, "保存回复失败"));
   const rows = (await response.json()) as unknown[];
   return rows.map(mapApiReply);
 }
 
-async function updateReplyItem(id: string, draft: ReplyDraft & { source: ReplySource }) {
+async function updateReplyItem(id: string, draft: ReplyDraft & { source: ReplySource }, password: string) {
   const response = await fetch("/api/replies", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, ...draft }),
+    body: JSON.stringify({ id, ...draft, password }),
   });
   if (!response.ok) throw new Error(await apiError(response, "更新回复失败"));
   const rows = (await response.json()) as unknown[];
@@ -636,7 +654,7 @@ async function deleteReplyItem(id: string, password: string) {
 async function apiError(response: Response, fallback: string) {
   try {
     const body = (await response.json()) as { error?: string; detail?: string };
-    return body.error === "Invalid delete password" ? "密码不正确" : body.detail || body.error || fallback;
+    return body.error === "Invalid delete password" || body.error === "Invalid reply password" ? "密码不正确" : body.detail || body.error || fallback;
   } catch {
     return fallback;
   }

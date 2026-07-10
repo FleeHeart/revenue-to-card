@@ -1,6 +1,6 @@
 import { normalizeSupabaseUrl, supabaseHeaders, supabaseRequest } from "./supabaseHttp.js";
 
-const DELETE_PASSWORD = process.env.REPLY_DELETE_PASSWORD ?? "FuYao";
+const REPLY_PASSWORD = process.env.REPLY_PASSWORD ?? process.env.REPLY_DELETE_PASSWORD ?? "FuYao";
 
 function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
@@ -60,6 +60,10 @@ function parseBody(request) {
   return request.body;
 }
 
+function validatePassword(body) {
+  return String(body.password ?? "") === REPLY_PASSWORD;
+}
+
 export default async function handler(request, response) {
   if (request.method === "OPTIONS") {
     response.status(204).end();
@@ -97,6 +101,11 @@ export default async function handler(request, response) {
       }
 
       const body = parseBody(request);
+      if (!validatePassword(body)) {
+        response.status(403).json({ error: "Invalid reply password" });
+        return;
+      }
+
       const payload = Array.isArray(body.items) ? body.items.map(normalizeReply) : normalizeReply(body);
       const items = Array.isArray(payload) ? payload : [payload];
       const invalid = items.map(validateReply).find(Boolean);
@@ -128,6 +137,11 @@ export default async function handler(request, response) {
 
       const body = parseBody(request);
       const id = String(body.id ?? "").trim();
+      if (!validatePassword(body)) {
+        response.status(403).json({ error: "Invalid reply password" });
+        return;
+      }
+
       if (!id) {
         response.status(400).json({ error: "id is required" });
         return;
@@ -140,7 +154,7 @@ export default async function handler(request, response) {
         return;
       }
 
-      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
+      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: supabaseHeaders(config.key),
         body: reply,
@@ -170,12 +184,12 @@ export default async function handler(request, response) {
         return;
       }
 
-      if (password !== DELETE_PASSWORD) {
-        response.status(403).json({ error: "Invalid delete password" });
+      if (password !== REPLY_PASSWORD) {
+        response.status(403).json({ error: "Invalid reply password" });
         return;
       }
 
-      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}&source=eq.custom`, {
+      const upstream = await supabaseRequest(`${config.endpoint}?id=eq.${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: supabaseHeaders(config.key),
         body: { is_active: false },
