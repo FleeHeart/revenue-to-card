@@ -3619,6 +3619,10 @@ main {
 
 .reply-detail-actions .reply-primary-button,
 .reply-detail-actions .text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   min-height: 2.65rem;
   white-space: nowrap;
 }

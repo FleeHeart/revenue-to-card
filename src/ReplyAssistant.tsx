@@ -360,7 +360,7 @@ function ReplyDetail({
     <div className="reply-detail-stack">
       <div className="reply-detail-hero">
         <div className="reply-detail-heading">
-          <span className="reply-detail-source">{item.source === "default" ? "默认回复" : "我的回复"}</span>
+          <span className="reply-detail-source">问题</span>
           <h2>{item.question}</h2>
         </div>
         <div className="reply-detail-actions">
