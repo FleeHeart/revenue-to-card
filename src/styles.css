@@ -95,7 +95,7 @@
   display: grid;
   grid-template-columns: minmax(260px, 0.36fr) minmax(0, 1fr);
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .workout-control-panel,
@@ -117,6 +117,7 @@
 .workout-control-panel {
   position: sticky;
   top: 5.6rem;
+  align-self: stretch;
 }
 
 .workout-panel-title {
@@ -4170,6 +4171,7 @@ main {
 
   .workout-control-panel {
     position: static;
+    align-self: auto;
   }
 
   .workout-result-actions {
