@@ -728,6 +728,8 @@ function AppTopBar({
     { route: "reply", label: "回复助手", icon: <MessageSquareText className="h-4 w-4" /> },
     { route: "workout", label: "周报", icon: <FileText className="h-4 w-4" /> },
   ];
+  const navOrder: AppRoute[] = ["home", "workout", "bill", "reply", "fields", "calculator"];
+  const orderedNavItems = navOrder.map((navRoute) => navItems.find((item) => item.route === navRoute)!);
 
   return (
     <header className="app-topbar">
@@ -742,7 +744,7 @@ function AppTopBar({
       </button>
 
       <nav className="app-nav" aria-label="主要功能">
-        {navItems.map((item) => (
+        {orderedNavItems.map((item) => (
           <button
             key={item.route}
             className={route === item.route ? "is-active" : ""}
