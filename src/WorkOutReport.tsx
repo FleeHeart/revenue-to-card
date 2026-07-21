@@ -114,9 +114,9 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <section className="workout-page mx-auto w-full max-w-[88rem] px-4 pb-8 sm:px-6 lg:px-8">
+    <section className="workout-page mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
       <motion.header className="workout-hero" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.14 }}>
-        <div className="workout-hero-copy">
+        <div>
           <span className="system-chip">
             <FileText className="h-3.5 w-3.5" />
             WorkOut
