@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Columns3,
   Database,
+  FileText,
   ListFilter,
   Loader2,
   MessageSquareText,
@@ -28,7 +29,7 @@ import { fieldDefinitions, type FieldDefinition } from "./fieldDefinitions";
 type PlatformId = "wechat" | "alipay" | "meituanTakeout" | "taobaoFlash" | "jdInstant" | "douyinLocal" | "meituanGroup";
 type ViewMode = "board" | "list" | "calendar";
 type ThemeMode = "dark" | "light";
-type AppRoute = "home" | "calculator" | "bill" | "fields" | "reply";
+type AppRoute = "home" | "calculator" | "bill" | "fields" | "reply" | "workout";
 
 type PlatformConfig = {
   id: PlatformId;
@@ -86,6 +87,7 @@ const fieldSearchIndex = new Map(
 );
 const BillProcessorModal = lazy(() => import("./BillProcessorModal").then((module) => ({ default: module.BillProcessorModal })));
 const ReplyAssistant = lazy(() => import("./ReplyAssistant").then((module) => ({ default: module.ReplyAssistant })));
+const WorkOutReport = lazy(() => import("./WorkOutReport").then((module) => ({ default: module.WorkOutReport })));
 
 const platforms: PlatformConfig[] = [
   {
@@ -154,6 +156,7 @@ function getRouteFromPath(pathname: string): AppRoute {
   if (pathname.endsWith("/bill")) return "bill";
   if (pathname.endsWith("/fields")) return "fields";
   if (pathname.endsWith("/reply")) return "reply";
+  if (pathname.endsWith("/workout")) return "workout";
   return "home";
 }
 
@@ -686,6 +689,7 @@ export function App() {
         )}
         <Suspense fallback={<FeaturePageSkeleton />}>
           {route === "reply" && <ReplyAssistant onClose={() => navigate("home")} />}
+          {route === "workout" && <WorkOutReport onClose={() => navigate("home")} />}
         </Suspense>
       </div>
     </main>
@@ -722,6 +726,7 @@ function AppTopBar({
     { route: "bill", label: "账单处理", icon: <Database className="h-4 w-4" /> },
     { route: "fields", label: "字段说明", icon: <BookOpen className="h-4 w-4" /> },
     { route: "reply", label: "回复助手", icon: <MessageSquareText className="h-4 w-4" /> },
+    { route: "workout", label: "周报", icon: <FileText className="h-4 w-4" /> },
   ];
 
   return (
@@ -785,6 +790,11 @@ function HomePortal({ today }: { today: string }) {
       title: "回复助手",
       desc: "沉淀常用 Q/A 和标准回复，按关键词检索后一键复制给同事或门店。",
       icon: <MessageSquareText className="h-4 w-4" />,
+    },
+    {
+      title: "WorkOut 周报",
+      desc: "连接本地生成服务，按交付人员生成个人周报 Markdown。",
+      icon: <FileText className="h-4 w-4" />,
     },
   ];
 
