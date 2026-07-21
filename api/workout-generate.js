@@ -89,8 +89,14 @@ export default async function handler(request, response) {
   if (request.method === "OPTIONS") return response.status(204).end();
 
   if (request.method === "GET") {
-    if (String(request.query?.action || "") !== "health") return response.status(405).json({ error: "Method not allowed" });
-    const result = await requestWorkOut("/health");
+    const action = String(request.query?.action || "");
+    const jobId = String(request.query?.jobId || "");
+    if (action === "health") {
+      const result = await requestWorkOut("/health");
+      return response.status(result.status).json(result.data);
+    }
+    if (!/^[a-f0-9]{32}$/.test(jobId)) return response.status(405).json({ error: "Method not allowed" });
+    const result = await requestWorkOut(`/weekly-report-jobs/${jobId}`);
     return response.status(result.status).json(result.data);
   }
   if (request.method !== "POST") return response.status(405).json({ error: "Method not allowed" });

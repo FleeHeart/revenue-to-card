@@ -66,9 +66,12 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
           week: weekValue,
         }),
       });
-      const data = await response.json();
+      let data = await response.json();
       if (!response.ok) {
         throw new Error(data.detail || data.error || "生成失败");
+      }
+      if (response.status === 202 && data.jobId) {
+        data = await waitForReport(data.jobId);
       }
       setResult(data);
       setGenerateState("success");
@@ -78,6 +81,18 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
       setError(caught instanceof Error ? caught.message : "生成失败");
       setServiceState("offline");
     }
+  }
+
+  async function waitForReport(jobId: string) {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      const response = await fetch(`/api/workout-generate?jobId=${encodeURIComponent(jobId)}`);
+      const data = await response.json();
+      if (response.status === 202) continue;
+      if (!response.ok) throw new Error(data.detail || data.error || "生成失败");
+      return data;
+    }
+    throw new Error("周报生成时间过长，请稍后刷新页面查看结果。");
   }
 
   async function copyMarkdown() {
