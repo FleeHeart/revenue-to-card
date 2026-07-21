@@ -26,6 +26,7 @@ with check (
     'field_search',
     'field_view',
     'platform_selected',
-    'calculation_ready'
+    'calculation_ready',
+    'workout_report_generated'
   )
 );
