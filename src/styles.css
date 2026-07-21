@@ -6400,13 +6400,17 @@ body {
 }
 
 .workout-control-panel {
+  display: flex;
+  min-height: 28rem;
+  flex-direction: column;
   position: sticky;
   top: 0.8rem;
+  align-self: stretch;
   border-top: 3px solid hsl(167 50% 39%);
 }
 
 .workout-preview-panel {
-  min-height: 34rem;
+  min-height: 28rem;
 }
 
 .workout-panel-title {
@@ -6427,14 +6431,54 @@ body {
 }
 
 .workout-primary-button {
-  min-height: 3rem;
+  min-height: 2.5rem;
   border-radius: 7px;
   font-size: 0.9rem;
   font-weight: 800;
 }
 
+.workout-control-summary {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: auto;
+  border-top: 1px solid hsl(201 52% 18% / 0.13);
+  padding-top: 0.8rem;
+}
+
+.workout-control-summary > p {
+  margin: 0;
+  color: hsl(167 50% 34%);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.workout-usage-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: hsl(167 50% 34%);
+}
+
+.workout-usage-count strong {
+  font-size: 2rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.workout-usage-count span {
+  padding-top: 0.48rem;
+  color: hsl(var(--muted));
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.workout-usage-caption {
+  color: hsl(var(--muted));
+  font-size: 0.72rem;
+}
+
 .workout-empty {
-  min-height: 24rem;
+  min-height: 19rem;
   border-color: hsl(201 52% 18% / 0.16);
   border-style: solid;
   background: hsl(197 50% 94% / 0.54);
@@ -6512,6 +6556,10 @@ body {
   background: hsl(197 45% 17% / 0.54);
 }
 
+.dark .workout-control-summary {
+  border-top-color: hsl(181 41% 73% / 0.13);
+}
+
 .dark .workout-result-actions {
   border-bottom-color: hsl(181 41% 73% / 0.12);
 }
@@ -6527,6 +6575,7 @@ body {
   }
 
   .workout-control-panel {
+    min-height: auto;
     position: static;
   }
 }

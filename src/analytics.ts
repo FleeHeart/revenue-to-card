@@ -4,7 +4,8 @@ type AnalyticsEventName =
   | "field_search"
   | "field_view"
   | "platform_selected"
-  | "calculation_ready";
+  | "calculation_ready"
+  | "workout_report_generated";
 
 type AnalyticsPayload = Record<string, string | number | boolean | string[] | number[] | null | undefined>;
 

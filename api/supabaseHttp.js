@@ -43,6 +43,7 @@ export function supabaseRequest(url, { method = "GET", headers = {}, body } = {}
             ok: upstream.statusCode >= 200 && upstream.statusCode < 300,
             status: upstream.statusCode,
             statusText: upstream.statusMessage,
+            headers: upstream.headers,
             text: async () => data,
             json: async () => (data ? JSON.parse(data) : null),
           });

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Clipboard, Download, FileText, Loader2, RefreshCcw, Server, Upload, WifiOff, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { trackEvent } from "./analytics";
 import { workoutPeople } from "./workoutPeople";
 
 type ServiceState = "checking" | "online" | "offline";
@@ -33,6 +34,7 @@ export function WorkOutReport() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [activeGuideImage, setActiveGuideImage] = useState<GuideImage | null>(null);
+  const [usageCount, setUsageCount] = useState(0);
 
   const selectedPerson = useMemo(() => {
     return workoutPeople.find((person) => person.id === personKey) ?? workoutPeople[0];
@@ -43,6 +45,7 @@ export function WorkOutReport() {
 
   useEffect(() => {
     void checkHealth();
+    void loadUsageCount();
   }, []);
 
   useEffect(() => {
@@ -61,6 +64,17 @@ export function WorkOutReport() {
       setServiceState(response.ok ? "online" : "offline");
     } catch {
       setServiceState("offline");
+    }
+  }
+
+  async function loadUsageCount() {
+    try {
+      const response = await fetch("/api/analytics?event_name=workout_report_generated");
+      if (!response.ok) return;
+      const data = await response.json();
+      if (typeof data.count === "number") setUsageCount(data.count);
+    } catch {
+      // Usage statistics should never interrupt report generation.
     }
   }
 
@@ -91,6 +105,8 @@ export function WorkOutReport() {
       setResult(data);
       setGenerateState("success");
       setServiceState("online");
+      trackEvent("workout_report_generated", { owner: selectedPerson.name, week: weekValue });
+      setUsageCount((current) => current + 1);
     } catch (caught) {
       setGenerateState("error");
       setError(caught instanceof Error ? caught.message : "生成失败");
@@ -202,6 +218,15 @@ export function WorkOutReport() {
           </button>
 
           {error && <p className="workout-error">{error}</p>}
+
+          <div className="workout-control-summary" aria-label="本次生成摘要">
+            <p>功能使用次数</p>
+            <div className="workout-usage-count" aria-live="polite">
+              <strong>{usageCount}</strong>
+              <span>次</span>
+            </div>
+            <span className="workout-usage-caption">周报成功生成后自动累计</span>
+          </div>
         </section>
 
         <section className="workout-preview-panel">
