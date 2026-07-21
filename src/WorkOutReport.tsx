@@ -287,44 +287,52 @@ export function WorkOutReport() {
           </span>
           <div>
             <p>发布到飞书</p>
-            <h2 id="workout-upload-guide-title">下载后，上传到飞书文件夹</h2>
+            <h2 id="workout-upload-guide-title">下载后，导入为飞书在线文档</h2>
           </div>
         </div>
         <ol className="workout-upload-steps">
           <li>
             <span>01</span>
             <div>
-              <strong>下载 Markdown</strong>
-              <p>周报生成后，点击右侧的“下载”保存 `.md` 文件。</p>
+              <strong>新建并导入在线文档</strong>
+              <p>进入飞书任意文件夹，点击侧边栏的“···”，选择“新建 → 导入为在线文档”。</p>
+              <button
+                className="workout-upload-figure"
+                type="button"
+                aria-label="放大查看在飞书文件夹中导入在线文档的截图"
+                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/new-import-online-doc.png", alt: "在飞书文件夹中选择新建并导入为在线文档" })}
+              >
+                <img src="/feishu-upload-guide/new-import-online-doc.png" alt="在飞书文件夹中选择新建并导入为在线文档" loading="lazy" />
+              </button>
             </div>
           </li>
           <li>
             <span>02</span>
             <div>
-              <strong>打开飞书文件夹</strong>
-              <p>进入飞书任意文件夹，点击 `+`，选择“上传文件”。</p>
+              <strong>选择 Markdown 格式</strong>
+              <p>在导入类型列表中，选择 Markdown（支持 `.md`、`.markdown`、`.mark`、`.txt`）。</p>
               <button
                 className="workout-upload-figure"
                 type="button"
-                aria-label="放大查看在飞书文件夹中选择上传文件的截图"
-                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/choose-upload.png", alt: "在飞书文件夹菜单中选择上传文件" })}
+                aria-label="放大查看选择 Markdown 格式的截图"
+                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/select-markdown-format.png", alt: "在飞书导入类型中选择 Markdown" })}
               >
-                <img src="/feishu-upload-guide/choose-upload.png" alt="在飞书文件夹菜单中选择上传文件" loading="lazy" />
+                <img src="/feishu-upload-guide/select-markdown-format.png" alt="在飞书导入类型中选择 Markdown" loading="lazy" />
               </button>
             </div>
           </li>
           <li>
             <span>03</span>
             <div>
-              <strong>选择刚下载的文件</strong>
-              <p>选中刚保存的 Markdown 文档，上传完成。</p>
+              <strong>选择下载的周报文件</strong>
+              <p>选中生成后下载的 `.md` 周报文件，导入完成后会成为飞书在线文档。</p>
               <button
                 className="workout-upload-figure"
                 type="button"
                 aria-label="放大查看选择下载的 Markdown 文档的截图"
-                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/select-file.png", alt: "在文件选择器中选择下载的 Markdown 文档" })}
+                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/choose-markdown-file.png", alt: "在文件选择器中选择下载的 Markdown 周报" })}
               >
-                <img src="/feishu-upload-guide/select-file.png" alt="在文件选择器中选择下载的 Markdown 文档" loading="lazy" />
+                <img src="/feishu-upload-guide/choose-markdown-file.png" alt="在文件选择器中选择下载的 Markdown 周报" loading="lazy" />
               </button>
             </div>
           </li>
