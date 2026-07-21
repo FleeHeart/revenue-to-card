@@ -62,6 +62,7 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ownerName: selectedPerson.name,
+          ownerUserKey: selectedPerson.userKey,
           week: weekValue,
         }),
       });

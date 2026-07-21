@@ -97,12 +97,16 @@ export default async function handler(request, response) {
 
   const body = parseBody(request);
   const ownerName = String(body.ownerName || "").trim();
+  const ownerUserKey = String(body.ownerUserKey || "").trim();
   const week = String(body.week || "last").trim();
   if (!ownerName) return response.status(400).json({ error: "ownerName is required" });
   if (week !== "last" && !/^\d{4}-\d{2}-\d{2}:\d{4}-\d{2}-\d{2}$/.test(week)) {
     return response.status(400).json({ error: "week must be last or YYYY-MM-DD:YYYY-MM-DD" });
   }
 
-  const result = await requestWorkOut("/generate-weekly-report", { method: "POST", body: { ownerName, week, source: "database" } });
+  const result = await requestWorkOut("/generate-weekly-report", {
+    method: "POST",
+    body: { ownerName, ownerUserKey: ownerUserKey || undefined, week, source: "database" },
+  });
   return response.status(result.status).json(result.data);
 }
