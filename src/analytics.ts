@@ -19,7 +19,7 @@ function getSessionId() {
   return nextId;
 }
 
-export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayload = {}) {
+export async function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayload = {}) {
   if (typeof window === "undefined") return;
 
   const event = {
@@ -30,14 +30,14 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayl
     payload,
   };
 
-  window.setTimeout(() => {
-    void fetch("/api/analytics", {
+  try {
+    await fetch("/api/analytics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(event),
       keepalive: true,
-    }).catch(() => {
-      // Analytics should never interrupt the tool experience.
     });
-  }, 0);
+  } catch {
+    // Analytics should never interrupt the tool experience.
+  }
 }

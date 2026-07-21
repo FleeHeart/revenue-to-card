@@ -102,11 +102,11 @@ export function WorkOutReport() {
       if (response.status === 202 && data.jobId) {
         data = await waitForReport(data.jobId);
       }
+      await trackEvent("workout_report_generated", { owner: selectedPerson.name, week: weekValue });
+      await loadUsageCount();
       setResult(data);
       setGenerateState("success");
       setServiceState("online");
-      trackEvent("workout_report_generated", { owner: selectedPerson.name, week: weekValue });
-      setUsageCount((current) => current + 1);
     } catch (caught) {
       setGenerateState("error");
       setError(caught instanceof Error ? caught.message : "生成失败");
