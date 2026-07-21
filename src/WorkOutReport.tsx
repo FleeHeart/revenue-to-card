@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Clipboard, Download, FileText, Loader2, RefreshCcw, Server, WifiOff, X } from "lucide-react";
+import { CheckCircle2, Clipboard, Download, FileText, Loader2, RefreshCcw, Server, Upload, WifiOff, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { workoutPeople } from "./workoutPeople";
 
@@ -17,7 +17,12 @@ type WorkOutResult = {
   markdown: string;
 };
 
-export function WorkOutReport({ onClose }: { onClose: () => void }) {
+type GuideImage = {
+  src: string;
+  alt: string;
+};
+
+export function WorkOutReport() {
   const [personKey, setPersonKey] = useState(workoutPeople[0]?.id ?? "");
   const [weekMode, setWeekMode] = useState<WeekMode>("last");
   const [startDate, setStartDate] = useState("");
@@ -27,6 +32,7 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<WorkOutResult | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [activeGuideImage, setActiveGuideImage] = useState<GuideImage | null>(null);
 
   const selectedPerson = useMemo(() => {
     return workoutPeople.find((person) => person.id === personKey) ?? workoutPeople[0];
@@ -38,6 +44,15 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     void checkHealth();
   }, []);
+
+  useEffect(() => {
+    if (!activeGuideImage) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveGuideImage(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [activeGuideImage]);
 
   async function checkHealth() {
     setServiceState("checking");
@@ -186,11 +201,6 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
             <span>{generateState === "loading" ? "生成中" : "生成 Markdown"}</span>
           </button>
 
-          <button className="text-button" type="button" onClick={onClose}>
-            <X className="h-4 w-4" />
-            <span>返回首页</span>
-          </button>
-
           {error && <p className="workout-error">{error}</p>}
         </section>
 
@@ -244,6 +254,71 @@ export function WorkOutReport({ onClose }: { onClose: () => void }) {
           </AnimatePresence>
         </section>
       </div>
+
+      <section className="workout-upload-guide" aria-labelledby="workout-upload-guide-title">
+        <div className="workout-upload-guide-intro">
+          <span className="panel-icon">
+            <Upload className="h-4 w-4" />
+          </span>
+          <div>
+            <p>发布到飞书</p>
+            <h2 id="workout-upload-guide-title">下载后，上传到飞书文件夹</h2>
+          </div>
+        </div>
+        <ol className="workout-upload-steps">
+          <li>
+            <span>01</span>
+            <div>
+              <strong>下载 Markdown</strong>
+              <p>周报生成后，点击右侧的“下载”保存 `.md` 文件。</p>
+            </div>
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <strong>打开飞书文件夹</strong>
+              <p>进入飞书任意文件夹，点击 `+`，选择“上传文件”。</p>
+              <button
+                className="workout-upload-figure"
+                type="button"
+                aria-label="放大查看在飞书文件夹中选择上传文件的截图"
+                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/choose-upload.png", alt: "在飞书文件夹菜单中选择上传文件" })}
+              >
+                <img src="/feishu-upload-guide/choose-upload.png" alt="在飞书文件夹菜单中选择上传文件" loading="lazy" />
+              </button>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <strong>选择刚下载的文件</strong>
+              <p>选中刚保存的 Markdown 文档，上传完成。</p>
+              <button
+                className="workout-upload-figure"
+                type="button"
+                aria-label="放大查看选择下载的 Markdown 文档的截图"
+                onClick={() => setActiveGuideImage({ src: "/feishu-upload-guide/select-file.png", alt: "在文件选择器中选择下载的 Markdown 文档" })}
+              >
+                <img src="/feishu-upload-guide/select-file.png" alt="在文件选择器中选择下载的 Markdown 文档" loading="lazy" />
+              </button>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <AnimatePresence>
+        {activeGuideImage && (
+          <motion.div className="workout-image-lightbox" role="dialog" aria-modal="true" aria-label="飞书上传步骤截图" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <button className="workout-image-lightbox-scrim" type="button" aria-label="关闭图片预览" onClick={() => setActiveGuideImage(null)} />
+            <motion.div className="workout-image-lightbox-content" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+              <img src={activeGuideImage.src} alt={activeGuideImage.alt} />
+              <button className="icon-button workout-image-lightbox-close" type="button" aria-label="关闭图片预览" title="关闭" onClick={() => setActiveGuideImage(null)}>
+                <X className="h-4 w-4" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

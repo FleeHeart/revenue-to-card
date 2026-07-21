@@ -418,6 +418,7 @@ export function App() {
           onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         />
 
+        <div className="app-content">
         {route === "home" && <HomePortal today={isoToday} />}
 
         {route === "calculator" && <section className="process-grid mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
@@ -689,8 +690,9 @@ export function App() {
         )}
         <Suspense fallback={<FeaturePageSkeleton />}>
           {route === "reply" && <ReplyAssistant onClose={() => navigate("home")} />}
-          {route === "workout" && <WorkOutReport onClose={() => navigate("home")} />}
+          {route === "workout" && <WorkOutReport />}
         </Suspense>
+        </div>
       </div>
     </main>
   );
